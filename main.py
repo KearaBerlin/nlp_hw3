@@ -6,31 +6,31 @@ tokenizer = AutoTokenizer.from_pretrained("gpt2")
 model = AutoModelForCausalLM.from_pretrained("gpt2")
 model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
-prompt = "Roses are red, violets are"
+prompt = "Today I believe we can"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
 def generate_sentence(description, do_sample=False, num_beams=1, top_k=50, top_p=1):
     output = model.generate(input_ids, do_sample=do_sample, 
                                       num_beams=num_beams, top_k=top_k,
                                       top_p=top_p, max_length=30,
-                                      pad_token_id=tokenizer.eos_token_id)
-                                    #   output_scores=True,
-                                    #   return_dict_in_generate=True)
-    # tokens = output.sequences[0]
-    tokens = output[0]
+                                      pad_token_id=tokenizer.eos_token_id,
+                                      output_scores=True,
+                                      return_dict_in_generate=True)
+    tokens = output.sequences[0]
+    # tokens = output[0]
     sentence = tokenizer.batch_decode(tokens, skip_special_tokens=True)
     print(f"{description}: {sentence}")
 
-    with torch.no_grad():
-        outputs = model(tokens)
+    # with torch.no_grad():
+    #     outputs = model(tokens)
 
     softmax = torch.nn.Softmax(dim=-1)
     token_probs = []
-    # for (token_id, logits) in zip(tokens, output.scores):
-    for (token_id, logits) in zip(tokens, outputs.logits):
+    for (token_id, logits) in zip(tokens, output.scores):
+    # for (token_id, logits) in zip(tokens, outputs.logits):
         probs = softmax(logits)
-        # token_probs.append(probs[0,token_id].item())
-        token_probs.append(probs[token_id].item())
+        token_probs.append(probs[0,token_id].item())
+        # token_probs.append(probs[token_id].item())
     token_probs = torch.tensor(token_probs)
 
     likelihood = sum(torch.log(token_probs))
@@ -39,10 +39,10 @@ def generate_sentence(description, do_sample=False, num_beams=1, top_k=50, top_p
     perplexity = torch.exp(-1/N * likelihood)
 
     # double checking the calculation is the same with a different base
-    likelihood_2 = 0
-    for p in token_probs.numpy():
-        likelihood_2 += math.log(p,2)
-    perplexity_2 = math.pow(2, -1/N * likelihood_2)
+    # likelihood_2 = 0
+    # for p in token_probs.numpy():
+    #     likelihood_2 += math.log(p,2)
+    # perplexity_2 = math.pow(2, -1/N * likelihood_2)
 
     print(f"Likelihood: {likelihood} Perplexity: {perplexity}")
 
