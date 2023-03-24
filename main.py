@@ -5,23 +5,34 @@ tokenizer = AutoTokenizer.from_pretrained("gpt2")
 model = AutoModelForCausalLM.from_pretrained("gpt2")
 model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
-prompt = "Today I believe we can finally"
+prompt = "Roses are red"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
 def generate_sentence(description, do_sample=False, num_beams=1, top_k=50, top_p=1):
-    generated_tokens = model.generate(input_ids, do_sample=do_sample, 
+    output = model.generate(input_ids, do_sample=do_sample, 
                                       num_beams=num_beams, top_k=top_k,
                                       top_p=top_p, max_length=30,
-                                      pad_token_id=tokenizer.eos_token_id)
-    sentence = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
+                                      pad_token_id=tokenizer.eos_token_id,
+                                      output_scores=True,
+                                      return_dict_in_generate=True)
+    tokens = output.sequences[0]
+    sentence = tokenizer.batch_decode(tokens, skip_special_tokens=True)
     print(f"{description}: {sentence}")
 
-    # TODO calculate perplexity and likelihood
-    # tokens = tokenizer(sentence, return_tensors="pt")
-    # with torch.no_grad():
-    #     outputs = model(**tokens)
-    # print()
-    # print(f"Perplexity: {} Likelihood: {}")
+    logits = []
+    for (token_id, token_logits) in zip(tokens, output.scores):
+        logits.append(token_logits[0,token_id].item())
+    logits = torch.tensor(logits)
+
+    softmax = torch.nn.Softmax()
+    probs = softmax(logits)
+    likelihood = sum(torch.log(probs))
+
+    N = len(output.scores)
+    perplexity = torch.exp(-1/N * likelihood)
+
+    print(f"Likelihood: {likelihood} Perplexity: {perplexity}")
+
 
 
 # greedy search (num_beams=1 (default) and do_sample=False)
