@@ -6,6 +6,12 @@ pip install torch
 
 pip install transformers
 
+pip install evaluate
+
+pip install bert_score
+
+pip install rouge_score
+
 ## To run:
 
 python main.py
