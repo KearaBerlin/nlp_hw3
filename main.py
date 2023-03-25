@@ -6,7 +6,7 @@ tokenizer = AutoTokenizer.from_pretrained("gpt2")
 model = AutoModelForCausalLM.from_pretrained("gpt2")
 model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
-prompt = "Today I believe we can"
+prompt = "Roses are red, violets are"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
 def generate_sentence(description, do_sample=False, num_beams=1, top_k=50, top_p=1):
@@ -19,7 +19,7 @@ def generate_sentence(description, do_sample=False, num_beams=1, top_k=50, top_p
     tokens = output.sequences[0]
     # tokens = output[0]
     sentence = tokenizer.batch_decode(tokens, skip_special_tokens=True)
-    print(f"{description}: {sentence}")
+    print(f"{description}: {''.join(sentence)}")
 
     # with torch.no_grad():
     #     outputs = model(tokens)

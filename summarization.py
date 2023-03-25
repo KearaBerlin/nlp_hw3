@@ -1,10 +1,15 @@
 from datasets import load_dataset
 from evaluate import load
-from transformers import BartForCausalLM, AutoTokenizer
+from transformers import BartForCausalLM, BartForConditionalGeneration, AutoTokenizer
 import csv
 
+from transformers import AutoTokenizer
+from transformers import AutoModel
+
 tokenizer = AutoTokenizer.from_pretrained("a1noack/bart-large-gigaword")
-model = BartForCausalLM.from_pretrained("a1noack/bart-large-gigaword")
+# model = AutoModel.from_pretrained("a1noack/bart-large-gigaword")
+# model = BartForCausalLM.from_pretrained("a1noack/bart-large-gigaword")
+model = BartForConditionalGeneration.from_pretrained("a1noack/bart-large-gigaword")
 
 bertscore = load("bertscore")
 rouge = load('rouge')
@@ -13,11 +18,17 @@ dataset = load_dataset("gigaword", split="test")
 documents = dataset['document'][:50]
 summaries = dataset['summary'][:50]
 
+input_ids_list = tokenizer(documents, truncation=True, max_length=128, 
+       return_tensors='pt', padding=True)['input_ids']
+output_ids_list = model.generate(input_ids_list, min_length=0)
+outputs_list = tokenizer.batch_decode(output_ids_list, skip_special_tokens=True, 
+       clean_up_tokenization_spaces=False)
+
 def generate_sentence(description, input_ids, do_sample=False, num_beams=1, top_k=50, top_p=1):
-    output = model.generate(input_ids, do_sample=do_sample, 
-                                      num_beams=num_beams, top_k=top_k,
-                                      top_p=top_p, max_length=30,
-                                      pad_token_id=tokenizer.eos_token_id)
+    # output = model.generate(input_ids, do_sample=do_sample, 
+    #                                   num_beams=num_beams, top_k=top_k,
+    #                                   top_p=top_p, max_length=30,
+    #                                   pad_token_id=tokenizer.eos_token_id)
                                     #   output_scores=True,
                                     #   return_dict_in_generate=True)
     # tokens = output.sequences[0]
@@ -30,7 +41,7 @@ def generate_sentence(description, input_ids, do_sample=False, num_beams=1, top_
 def calculate_metrics(sentence, reference):
     bert_results = bertscore.compute(predictions=[sentence], references=[reference], lang="en")
     rouge_results = rouge.compute(predictions=[sentence], references=[reference])
-    return bert_results, rouge_results
+    return bert_results["f1"][0], rouge_results["rouge1"][0]
 
 for (document, summary) in zip(documents, summaries):
     print(f"\n----------------\n{document}")
