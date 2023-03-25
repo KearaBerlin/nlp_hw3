@@ -1,6 +1,6 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
-import torch
-import math
+# from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+# import torch
+# import math
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 model = AutoModelForCausalLM.from_pretrained("gpt2")
