@@ -1,5 +1,5 @@
-# from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
-# import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+import torch
 # import math
 
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
@@ -21,8 +21,16 @@ def generate_sentence(description, do_sample=False, num_beams=1, top_k=50, top_p
     sentence = tokenizer.batch_decode(tokens, skip_special_tokens=True)
     print(f"{description}: {''.join(sentence)}")
 
+    # we tried this method of getting output logits instead of using output_scores=True in model.generate,
+    # and it gave non-zero probabilities for the sampling decoding methods, but the perplexities ended
+    # up being several orders of magnitude too large still (~1e34).
     # with torch.no_grad():
     #     outputs = model(tokens)
+
+    # we also tried using compute_transition_scores instead of getting all logits and choosing the correct
+    # one manually, but we ran into the same issues.
+
+    # possibly the issue is with how we are passing parameters to model.generate() in the first place.
 
     softmax = torch.nn.Softmax(dim=-1)
     token_probs = []

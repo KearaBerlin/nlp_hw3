@@ -1,10 +1,7 @@
 from datasets import load_dataset
 from evaluate import load
-from transformers import BartForCausalLM, BartForConditionalGeneration, AutoTokenizer
+from transformers import BartForConditionalGeneration, AutoTokenizer
 import csv
-
-from transformers import AutoTokenizer
-from transformers import AutoModel
 
 tokenizer = AutoTokenizer.from_pretrained("a1noack/bart-large-gigaword")
 model = BartForConditionalGeneration.from_pretrained("a1noack/bart-large-gigaword")
@@ -19,18 +16,13 @@ summaries = dataset['summary'][:50]
 with open('output.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['Sentence', 'Summary', 'Greedy Search', 'Greedy Search Bert Score', 'Greedy Search Rouge Score', 'Beam Search', 'Beam Search Bert Score', 'Beam Search Rouge Score', 'Top-K', 'Top-K Bert Score', 'Top-K Rouge Score', 'Top-P', 'Top-P Bert Score', 'Top-P Rouge Score'])
+
 def generate_sentence(description, input_ids, do_sample=False, num_beams=1, top_k=50, top_p=1):
     output = model.generate(input_ids, do_sample=do_sample,
                                       num_beams=num_beams, top_k=top_k,
                                       top_p=top_p, min_length=0, max_new_tokens=12,
                                       pad_token_id=tokenizer.eos_token_id)
-                                    #   output_scores=True,
-                                    #   return_dict_in_generate=True)
     tokens = output[0]
-    # length = len(input_ids)
-    # max_length = 32 + length
-    # output = model.generate(input_ids, min_length=0, max_length= max_length)
-    # tokens = output[0]
 
     sentence = tokenizer.batch_decode(tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False)
     s = "".join(sentence)
